@@ -1,157 +1,76 @@
-# Toki Data Scientist Task — DPD91 Risk Prediction
+# Toki Data Scientist Даалгавар — Credit Risk Prediction
 
-## 1. Төслийн тойм
+## 1. Даалгаврын зорилго
 
-Энэхүү төслийн зорилго нь **DPD31 (31 хоногийн хугацаа хэтэрсэн)** болсон зээлдэгч дараагийн шатанд **DPD91+** буюу 91 болон түүнээс дээш хоногийн хугацаа хэтрүүлэх эсэхийг машин сургалтын аргаар таамаглахад оршино.
+Энэхүү даалгаврын зорилго нь хэрэглэгчийн өмнөх хэрэглээ, санхүүгийн болон зан төлөвийн мэдээлэлд үндэслэн тухайн хэрэглэгч **ирээдүйд 91+ хоногийн хугацаа хэтрүүлэлт (`is_dpd_91 = 1`) үүсгэх эрсдэлтэй эсэхийг** таамаглах machine learning шийдэл боловсруулахад оршино.
 
-Үндсэн зорилго нь зөвхөн binary classification хийхээс гадна хэрэглэгчдийг эрсдэлийн оноогоор эрэмбэлж, өндөр эрсдэлтэй хэрэглэгчдэд цуглуулалт болон урьдчилан сэргийлэх арга хэмжээг түрүүлж чиглүүлэх боломж бүрдүүлэх юм.
+Энд зөвхөн classification model байгуулахаас гадна:
 
-### Үндсэн workflow
+- өгөгдлийн чанар ба missing value-ийг шалгах
+- feature engineering хийх
+- хэд хэдэн model-ийг харьцуулах
+- class imbalance-ийг харгалзах
+- threshold болон ranking-based шийдвэрийн логик шалгах
+- model-ийн ерөнхийлөх чадварыг шалгах
+- risk segmentation хийх
+- эцсийн prediction output боловсруулах
 
-```text
-DPD31 хэрэглэгч
-      ↓
-Machine Learning Model
-      ↓
-Risk Score
-      ↓
-Risk Ranking
-      ↓
-Risk Segmentation
-      ↓
-Collection / Intervention Prioritization
-```
+гэсэн үе шатуудыг хамруулсан.
 
 ---
 
-## 2. Бизнесийн асуудал
+## 2. Dataset overview
 
-DPD31 болсон хэрэглэгчдийн дундаас хэн нь DPD91+ болох эрсдэл өндөр байгааг урьдчилан тодорхойлох шаардлагатай.
+Өгөгдөлд хэрэглэгчийн credit, financial болон behavioral шинжүүд багтсан.
 
-Ингэснээр бизнес:
+### Гол зорилтот хувьсагч
 
-- өндөр эрсдэлтэй хэрэглэгчдийг эрт илрүүлэх
-- collection-ийн нөөцийг эрэмбэлэн хуваарилах
-- төлбөрийн сануулга болон харилцааг эрт эхлүүлэх
-- өндөр эрсдэлтэй хэрэглэгчдэд илүү анхаарал хандуулах
+`is_dpd_91`
 
-боломжтой.
+- `0` — 91+ хоногийн хугацаа хэтрүүлэлт үүсээгүй
+- `1` — 91+ хоногийн хугацаа хэтрүүлэлт үүссэн
 
-Энэхүү model нь хэрэглэгчийг автоматаар татгалзуулах эсвэл шийтгэх зориулалттай биш бөгөөд **эрсдэлийг эрэмбэлэх decision-support tool** хэлбэрээр ашиглахад чиглэнэ.
+### Өгөгдлийн үндсэн хэмжээ
 
----
-
-## 3. Өгөгдлийн тойм
-
-Анхны `user_list` өгөгдөл нийт **61,200 мөртэй**.
-
-| Dataset | Мөрийн тоо |
+| Dataset | Rows |
 |---|---:|
-| Нийт өгөгдөл | 61,200 |
-| Label-тэй өгөгдөл | 52,737 |
-| Prediction хийх unlabeled өгөгдөл | 8,463 |
+| Full user data | 61,200 |
+| Labeled data | 52,737 |
+| Train | 34,672 |
+| Validation | 9,170 |
+| Test | 8,895 |
+| Final prediction set | 8,463 |
 
-Target хувьсагч:
-
-```text
-is_dpd_91
-```
-
-- `0` — DPD91+ болохгүй
-- `1` — DPD91+ болно
-
-Label-тэй өгөгдлийн target distribution:
-
-| Target | Count |
-|---|---:|
-| 0 | 36,064 |
-| 1 | 16,673 |
-
-Positive class-ийн хувь ойролцоогоор **31.6%** бөгөөд imbalance бүхий binary classification problem гэж үзсэн.
+Final prediction set нь target label байхгүй хэрэглэгчдэд risk score тооцоход ашиглагдсан.
 
 ---
 
-## 4. Train / Validation / Test split
+# 3. Data understanding & preparation
 
-Энэ асуудал нь хугацааны дараалалтай тул random split ашиглахын оронд **temporal split** ашигласан.
+Өгөгдлийн эхний шатанд:
 
-| Dataset | Хугацаа | Мөр |
-|---|---|---:|
-| Train | Dec 2025 – Mar 2026 | 34,672 |
-| Validation | Apr 2026 | 9,170 |
-| Test | May 2026 | 8,895 |
-| Prediction | Unlabeled data | 8,463 |
+- dataset-ийн бүтэц
+- feature-ийн төрөл
+- missing value
+- target distribution
+- labeled/unlabeled record
+- date болон cohort-ийн боломжит ялгаа
 
-`created_month`-ийг temporal split болон analysis-д ашигласан боловч model feature болгон ашиглаагүй.
+зэргийг шалгасан.
 
-Temporal split ашигласнаар model-ийг бодит амьдралын ирээдүйн хугацаанд prediction хийх нөхцөлтэй илүү ойр үнэлэх боломжтой.
+Missing value-ийг шууд устгахын оронд feature-ийн утга болон missingness өөрөө prediction-д мэдээлэл өгч болох эсэхийг авч үзсэн.
 
----
-
-## 5. Data Quality болон Leakage шалгалт
-
-Model-д оруулахын өмнө feature availability болон potential leakage-ийг шалгасан.
-
-### `credit_id`
-
-Зөвхөн хэрэглэгчийг таних identifier болгон ашигласан бөгөөд model feature болгон ашиглаагүй.
-
-### `date_dpd_31`
-
-DPD31 prediction point-тэй холбоотой тул raw model feature болгон ашиглаагүй.
-
-### `created_month`
-
-Temporal split болон analysis-д ашигласан боловч model feature болгон ашиглаагүй.
-
-### `total_payment_amt`
-
-Prediction хийх үеийн мэдээлэл гэдгийг найдвартай баталгаажуулах боломжгүй тул conservative байдлаар хассан.
-
-### `is_unitel`
-
-Prediction population-д бараг бүрэн missing байсан тул хассан.
-
-### `gender`
-
-Prediction population-д маш өндөр missing rate-тэй байсан тул хассан.
-
-### `has_changed_phone`
-
-Prediction population-д маш өндөр missing rate-тэй байсан тул хассан.
-
-### `ostype`
-
-Prediction population-д ашиглах боломжтой мэдээлэл байсан тул хадгалсан.
+Ялангуяа behavioral feature-үүд дээр missing indicator feature ашигласан.
 
 ---
 
-## 6. Missing Value Analysis
+# 4. Feature engineering
 
-Missing values-ийг зөвхөн техникийн асуудал гэж үзэлгүй, өөрөө predictive signal байж болох эсэхийг шалгасан.
-
-Зарим feature-д missing indicator үүсгэсэн.
-
-Missingness-only XGBoost туршилтаар:
-
-```text
-ROC-AUC = 0.5680
-PR-AUC  = 0.3625
-```
-
-гэсэн үр дүн гарсан.
-
-Энэ нь missingness өөрөө target-тэй тодорхой холбоотой байж болохыг харуулсан боловч missingness alone нь үндсэн model-ийн predictive power-ийг бүрэн тайлбарлахгүй.
-
----
-
-## 7. Feature Engineering
-
-Model-д DPD31 үеийн financial болон behavioral мэдээллүүдийг ашигласан.
+Financial болон behavioral мэдээллийг тусад нь боловсруулж, дараа нь model-д ашиглах feature set болгон нэгтгэсэн.
 
 ### Financial features
 
-Жишээ:
+Үндсэн financial feature-үүдээс:
 
 - `limit_dpd31`
 - `balance_dpd31`
@@ -159,332 +78,326 @@ Model-д DPD31 үеийн financial болон behavioral мэдээллүүди
 - `balance_ondue`
 - `invoiced_unpaid_amt`
 
+зэрэг feature-үүд ашигласан.
+
+### Ratio features
+
+Financial feature-үүдээс дараах харьцаануудыг engineered feature болгон үүсгэсэн:
+
+- `balance_ondue_to_limit`
+- `balance_dpd31_to_limit`
+- `unpaid_to_balance_ondue`
+- `unpaid_to_limit_ondue`
+
 ### Behavioral features
 
-Жишээ:
+Хэрэглэгчийн:
 
-- transaction count
-- average transaction amount
+- application recency
+- transaction frequency
+- transaction amount
 - session activity
-- notification reading activity
-- transaction recency
+- notification interaction
 - user tenure
-- number-change activity
+- number change activity
 
-Temporal windows:
+зэрэг behavioral мэдээллийг 7, 30, 60, 90 хоногийн цонхоор ашигласан.
 
-```text
-trx_l7d
-trx_l30d
-trx_l60d
-trx_l90d
+Нийт эцсийн model feature:
 
-avg_trx_amount_l7d
-avg_trx_amount_l30d
-avg_trx_amount_l60d
-avg_trx_amount_l90d
-
-sessions_l7d
-sessions_l30d
-sessions_l60d
-sessions_l90d
-
-read_noti_l7d
-read_noti_l30d
-read_noti_l60d
-read_noti_l90d
-```
-
-Мөн financial ratio болон missingness-related features үүсгэж үнэлсэн.
-
-Final XGBoost model нийт **33 feature** ашигласан.
+**33 features**
 
 ---
 
-## 8. Model Development
+# 5. Train / Validation / Test strategy
 
-Дараах model-уудыг туршиж харьцуулсан:
+Model development болон final evaluation-ийг тусгаарлахын тулд:
 
-- Logistic Regression
+- Train: 34,672 rows
+- Validation: 9,170 rows
+- Test: 8,895 rows
+
+хуваарилалт ашигласан.
+
+Validation set нь:
+
+- threshold selection
+- model comparison
+- ranking analysis
+
+зэрэг model selection-тэй холбоотой шийдвэрүүдэд ашиглагдсан.
+
+Test set нь эцсийн model performance-ийг үнэлэхэд ашиглагдсан.
+
+---
+
+# 6. Important data overlap analysis
+
+Credit-level overlap-ийг тусгайлан шалгасан.
+
+### Credit-level overlap
+
+| Comparison | Overlapping credits |
+|---|---:|
+| Train ∩ Validation | 3,138 |
+| Train ∩ Test | 3,523 |
+| Validation ∩ Test | 213 |
+
+Test set-ийн:
+
+- 3,638 rows буюу **40.9%** нь Train эсвэл Validation-д өмнө нь харагдсан credit-тэй холбоотой байсан.
+
+Иймээс test performance-ийг бүрэн unseen-credit generalization гэж тайлбарлахгүй байх шаардлагатай.
+
+Энэ нь model evaluation-ийн чухал limitation бөгөөд notebook болон README-д ил тод тэмдэглэсэн.
+
+---
+
+# 7. Models evaluated
+
+Хэд хэдэн model болон feature configuration-ийг харьцуулсан.
+
+Үүнд:
+
+- Logistic Regression / baseline
 - Random Forest
 - XGBoost
 - LightGBM
 - MLP
 
-Model evaluation-д голчлон:
+зэрэг model-ууд орсон.
 
-- ROC-AUC
-- PR-AUC
+MLP дээр feature selection-ийн нөлөөг мөн шалгасан:
 
-ашигласан.
-
-Мөн business application талаас:
-
-- Lift
-- Top-N ranking
-- Positive capture rate
-
-зэргийг шинжилсэн.
+- Top 5
+- Top 10
+- Top 15
+- Top 20
+- Top 33
 
 ---
 
-## 9. Model Comparison
+# 8. Final model comparison
 
-Эцсийн model comparison:
+Final evaluation дээр хамгийн сайн model нь XGBoost байсан.
 
 | Model | Features | Test ROC-AUC | Test PR-AUC |
 |---|---:|---:|---:|
-| **XGBoost** | 33 | **0.6175** | **0.3875** |
-| LightGBM | 33 | 0.6145 | 0.3744 |
-| MLP Top 33 | 33 | 0.6052 | 0.3730 |
-| MLP Top 20 | 20 | 0.5980 | 0.3641 |
-| MLP Top 10 | 10 | 0.5976 | 0.3647 |
+| **XGBoost** | **33** | **0.617548** | **0.387500** |
+| LightGBM | 33 | 0.614522 | 0.374430 |
+| MLP Top 33 | 33 | 0.605160 | 0.372955 |
+| MLP Top 20 | 20 | 0.598024 | 0.364123 |
+| MLP Top 10 | 10 | 0.597607 | 0.364724 |
 
-XGBoost нь evaluated final candidates дундаас test set дээр хамгийн сайн overall ranking performance үзүүлсэн тул final model-оор сонгосон.
+XGBoost нь test ROC-AUC болон PR-AUC-ийн аль алинд хамгийн өндөр үзүүлэлттэй байсан.
 
----
+### Final XGBoost
 
-## 10. Final XGBoost Model
+**Validation**
 
-Final model нь **33 feature бүхий XGBoost binary classifier**.
+- ROC-AUC: **0.628820**
+- PR-AUC: **0.432212**
 
-Model нь хэрэглэгч бүрт DPD91+ болох эрсдэлийг илэрхийлэх risk score гаргана.
+**Test**
 
-### Validation
+- ROC-AUC: **0.617548**
+- PR-AUC: **0.387500**
 
-```text
-ROC-AUC = 0.6288
-PR-AUC  = 0.4322
-```
-
-### Test
-
-```text
-ROC-AUC = 0.6175
-PR-AUC  = 0.3875
-```
-
-Эдгээр үзүүлэлт нь model төгс classifier биш боловч хэрэглэгчдийг эрсдэлийн түвшнээр эрэмбэлэхэд ашиглаж болохуйц predictive signal байгааг харуулж байна.
+Validation → Test-ийн бууралт байгаа боловч model ranking ability тодорхой хэмжээнд хадгалагдсан.
 
 ---
 
-## 11. Feature Importance
+# 9. Why PR-AUC is important
 
-Final XGBoost model-ийн хамгийн өндөр importance бүхий feature-үүд:
+Target class нь balanced биш тул зөвхөн accuracy ашиглах нь тохиромжгүй.
 
-| Feature | Importance |
-|---|---:|
-| `sessions_l7d` | 14.89% |
-| `sessions_l30d` | 8.18% |
-| `number_change_cnt_l90d` | 5.68% |
-| `invoiced_unpaid_amt` | 4.52% |
-| `trx_recency_l90d` | 3.67% |
-| `app_recency_days_missing` | 3.34% |
-| `balance_ondue_to_limit` | 3.32% |
-| `balance_dpd31` | 3.27% |
-| `avg_trx_amount_l90d` | 3.11% |
-| `balance_ondue` | 3.10% |
+Test set дээр positive rate:
 
-Ялангуяа богино хугацааны session activity болон transaction recency зэрэг behavioral features model-ийн prediction-д чухал хувь нэмэр оруулсан.
-
----
-
-## 12. Risk Ranking ба Lift Analysis
-
-Model-ийг зөвхөн classification threshold-ээр бус risk ranking хэлбэрээр ашиглах боломжийг шалгасан.
-
-Test set-ийн нийт positive rate:
-
-```text
-28.6%
-```
-
-Харин model-ийн хамгийн өндөр risk score-той Top 10% хэрэглэгчдийн:
-
-```text
-Actual Positive Rate = 46.0%
-Lift = 1.61x
-```
+**28.59%**
 
 байсан.
 
-### Test-set Lift
+Ийм нөхцөлд:
 
-| Top Risk Group | Actual Positive Rate | Lift |
-|---|---:|---:|
-| Top 10% | 46.0% | **1.61x** |
-| Top 20% | 40.7% | 1.42x |
-| Top 30% | 37.7% | 1.32x |
-| Top 40% | 36.8% | 1.29x |
-| Top 50% | 35.2% | 1.23x |
+- ROC-AUC
+- PR-AUC
+- Precision
+- Recall
+- Lift
+- Positive Capture Rate
 
-Энэ нь model-ийн хамгийн гол business value нь **өндөр эрсдэлтэй хэрэглэгчдийг эрэмбэлж, нөөцийг тэдгээр хэрэглэгчдэд төвлөрүүлэх** боломж гэдгийг харуулж байна.
+зэрэг metric-үүдийг хамтад нь ашигласан.
 
----
-
-## 13. Threshold Analysis
-
-Validation set дээр classification threshold-үүдийг харьцуулсан.
-
-Validation дээр F1 хамгийн өндөр байсан threshold:
-
-```text
-Threshold = 0.27
-F1        = 0.5039
-Precision = 0.3572
-Recall    = 0.8553
-```
-
-Гэхдээ энэ threshold нь predicted positive rate-ийг маш өндөр болгож байсан.
-
-Тиймээс final business output-д fixed binary threshold-ийг үндсэн шийдэл болгоогүй.
-
-Оронд нь:
-
-```text
-Risk Score
-     ↓
-Risk Ranking
-     ↓
-Top-N Prioritization
-```
-
-гэсэн аргачлалыг илүү тохиромжтой гэж үзсэн.
-
-Бодит production threshold-ийг дараах business information дээр үндэслэн тусад нь сонгох шаардлагатай:
-
-- False positive cost
-- False negative cost
-- Collection capacity
-- Intervention strategy
+PR-AUC нь positive class-ийг хэр сайн эрэмбэлж байгааг үнэлэхэд илүү ач холбогдолтой.
 
 ---
 
-## 14. Credit-Level Overlap ба Robustness
+# 10. Threshold analysis
 
-Өгөгдөл нь longitudinal шинжтэй бөгөөд нэг `credit_id` олон хугацаанд давтагдах боломжтой.
+Default threshold `0.50`-ийг шууд ашиглахын оронд validation set дээр threshold-ийг шалгасан.
 
-Тиймээс split хоорондын credit-level overlap-ийг шалгасан.
+Validation дээр хамгийн өндөр F1 үзүүлэлт:
 
-```text
-Train ∩ Validation = 3,138
-Train ∩ Test       = 3,523
-Validation ∩ Test  = 213
-```
+**Threshold = 0.27**
 
-Test set-ийн:
+- Precision: **0.3572**
+- Recall: **0.8553**
+- F1: **0.5039**
 
-```text
-40.9%
-```
+Гэхдээ test set дээр threshold 0.27 ашиглахад:
 
-нь Train эсвэл Validation set-д өмнө нь тухайн credit-level мэдээлэлтэй давхцаж байсан.
+- Precision: **0.3155**
+- Recall: **0.8836**
+- F1: **0.4649**
 
-Энэ нь тухайн өгөгдөлд repeated borrower/event structure байгаатай холбоотой бөгөөд шууд leakage гэж дүгнээгүй.
+гарсан.
 
-Гэхдээ model-ийн generalization performance-ийг тайлбарлахдаа энэ overlap-ийг limitation болгон авч үзсэн.
+Model-ийн predicted positive rate өндөр болсон тул threshold selection-ийг зөвхөн F1-ээр шийдэх нь бизнесийн хувьд заавал хамгийн зөв сонголт биш байж болохыг тэмдэглэсэн.
 
----
-
-## 15. Final Prediction
-
-Final XGBoost model-ийг unlabeled prediction population дээр ажиллуулсан.
-
-```text
-Prediction rows = 8,463
-Feature count   = 33
-```
-
-Final prediction score:
-
-```text
-Min risk score  = 0.1502
-Max risk score  = 0.5944
-Mean risk score = 0.3455
-```
-
-Prediction pipeline:
-
-```text
-Prediction source
-      ↓
-24 Behavioral features
-      +
-9 Financial features
-      ↓
-33 Final features
-      ↓
-StandardScaler
-      ↓
-Final XGBoost
-      ↓
-Risk Score
-```
-
-Prediction feature check:
-
-```text
-8463 rows × 33 features
-Feature order match = True
-Scaling = Successful
-Prediction = Successful
-```
+Иймээс ranking/lift approach-ийг мөн авч үзсэн.
 
 ---
 
-## 16. Risk Segmentation
+# 11. Ranking and Lift analysis
 
-8,463 prediction хэрэглэгчийг risk score-оор нь эрэмбэлж 4 сегментэд хуваасан.
+Risk prediction-ийн практик хэрэглээнд бүх хэрэглэгчийг binary `0/1` болгон ангилахаас илүү **хамгийн өндөр эрсдэлтэй хэрэглэгчдийг эрэмбэлэх** нь илүү ашигтай байж болно.
 
-| Risk Segment | Customers | Share | Avg Risk Score |
+Test set-ийн baseline positive rate:
+
+**28.59%**
+
+### Top-N performance
+
+| Top % | Actual Positive Rate | Lift | Positive Capture Rate |
+|---:|---:|---:|---:|
+| Top 10% | 46.01% | **1.609** | 16.08% |
+| Top 20% | 40.70% | **1.424** | 28.47% |
+| Top 30% | 37.74% | **1.320** | 39.60% |
+| Top 40% | 36.76% | **1.286** | 51.44% |
+| Top 50% | 35.24% | **1.233** | 61.62% |
+
+Эндээс model нь хамгийн өндөр эрсдэлтэй 10%-ийг сонгоход baseline-ээс ойролцоогоор **1.61x өндөр positive rate**-тай хэрэглэгчдийг төвлөрүүлж чадсан.
+
+---
+
+# 12. Risk segmentation
+
+Final unlabeled prediction set дээр XGBoost ашиглан **8,463 хэрэглэгчид risk score** тооцсон.
+
+Risk score-ийн хүрээ:
+
+- Minimum: **0.1502**
+- Maximum: **0.5944**
+- Mean: **0.3455**
+
+Хэрэглэгчдийг risk rank-аар дөрвөн segment болгон хуваасан.
+
+| Segment | Customers | Avg Risk Score | Share |
 |---|---:|---:|---:|
-| Top 10% - High Risk | 846 | 10.0% | 0.4502 |
-| 10–20% - High-Medium Risk | 846 | 10.0% | 0.4193 |
-| 20–30% - Medium Risk | 846 | 10.0% | 0.3988 |
-| Bottom 70% - Lower Risk | 5,925 | 70.0% | 0.3123 |
+| Top 10% - High Risk | 846 | 0.4502 | 10.00% |
+| 10-20% - High-Medium Risk | 846 | 0.4193 | 10.00% |
+| 20-30% - Medium Risk | 846 | 0.3988 | 10.00% |
+| Bottom 70% - Lower Risk | 5,925 | 0.3123 | 70.01% |
 
-Risk score-ийн дараалал нь segmentation-тэй нийцэж байна.
+Энэ segmentation нь binary classification-аас илүү operational байдлаар ашиглах боломжтой.
 
----
+Жишээлбэл:
 
-## 17. Business Recommendation
+- Top 10% — хамгийн түрүүнд анхаарах
+- 10–20% — өндөр priority
+- 20–30% — дунд priority
+- Bottom 70% — бага priority
 
-Model-ийг дараах байдлаар ашиглаж болно.
-
-### Top 10% — High Risk
-
-Хамгийн өндөр priority:
-
-- proactive payment reminder
-- collection contact
-- personalized communication
-- early intervention
-
-### 10–20% — High-Medium Risk
-
-Дунд/өндөр priority intervention болон monitoring.
-
-### 20–30% — Medium Risk
-
-Стандарт collection workflow + нэмэлт monitoring.
-
-### Bottom 70% — Lower Risk
-
-Ердийн collection workflow, харьцангуй бага intervention priority.
-
-Энд model-ийн prediction-ийг хэрэглэгчийн эцсийн шийдвэрийг автоматаар гаргах хэрэгсэл бус **decision-support tool** болгон ашиглах нь зөв.
+гэсэн байдлаар intervention priority үүсгэж болно.
 
 ---
 
-## 18. Final Output
+# 13. Feature importance
 
-Final prediction файл:
+Final XGBoost model-ийн хамгийн чухал feature-үүд:
 
-```text
-toki_final_risk_predictions.csv
-```
+| Rank | Feature | Importance |
+|---:|---|---:|
+| 1 | `sessions_l7d` | 14.89% |
+| 2 | `sessions_l30d` | 8.18% |
+| 3 | `number_change_cnt_l90d` | 5.68% |
+| 4 | `invoiced_unpaid_amt` | 4.52% |
+| 5 | `trx_recency_l90d` | 3.67% |
+| 6 | `app_recency_days_missing` | 3.34% |
+| 7 | `balance_ondue_to_limit` | 3.32% |
+| 8 | `balance_dpd31` | 3.27% |
+| 9 | `avg_trx_amount_l90d` | 3.11% |
+| 10 | `balance_ondue` | 3.10% |
 
-Файл нь нийт **8,463 мөр**, дараах 6 баганатай:
+Behavioral болон financial feature-үүд хоёулаа model-ийн prediction-д хувь нэмэр оруулж байна.
+
+Feature importance-ийг causal relationship гэж тайлбарлаагүй; model-ийн predictive contribution гэж ойлгосон.
+
+---
+
+# 14. Feature-target analysis
+
+Top feature-үүдийн target rate-ийг feature-ийн утгын интервалуудаар шалгасан.
+
+Жишээ нь `trx_recency_l90d`:
+
+- 1–9 days → target rate **22.65%**
+- 9–29 days → **23.86%**
+- 29–48 days → **30.64%**
+- 48–58 days → **30.82%**
+- 58–90 days → **35.18%**
+
+Энэ нь transaction recency нэмэгдэх буюу хэрэглэгчийн сүүлийн transaction-оос хойш хугацаа уртсах үед target rate өсөх хандлагатай байгааг харуулж байна.
+
+`balance_ondue_to_limit` болон `balance_dpd31_to_limit` зэрэг ratio feature-үүдийн хувьд мөн өндөр utilization/ratio түвшинд target rate өсөх хандлага ажиглагдсан.
+
+---
+
+# 15. Calibration analysis
+
+Prediction probability болон actual positive rate-ийг probability bins-ээр харьцуулсан.
+
+Model probability-ууд actual rate-ийг зарим түвшинд системтэйгээр өндөр үнэлж байсан.
+
+Жишээ нь:
+
+| Mean Predicted | Actual |
+|---:|---:|
+| 0.169 | 0.143 |
+| 0.243 | 0.191 |
+| 0.290 | 0.229 |
+| 0.324 | 0.244 |
+| 0.354 | 0.290 |
+| 0.381 | 0.291 |
+| 0.410 | 0.339 |
+| 0.440 | 0.318 |
+| 0.479 | 0.353 |
+| 0.557 | 0.461 |
+
+Иймээс `risk_score`-ийг шууд бодит default probability гэж тайлбарлахгүй.
+
+Энэ даалгаврын хувьд score-ийг **relative risk ranking** болгон ашиглах нь илүү зохистой.
+
+---
+
+# 16. Seen vs Unseen Credit analysis
+
+Test set дотор өмнөх dataset-үүдэд харагдсан credit болон unseen credit-ийг тусад нь шалгасан.
+
+| Credit status | Rows | ROC-AUC | PR-AUC |
+|---|---:|---:|---:|
+| Seen-credit | 3,638 | 0.6054 | 0.3532 |
+| Unseen-credit | 5,257 | 0.6249 | 0.4082 |
+
+Unseen-credit дээр model-ийн performance илүү өндөр гарсан.
+
+Энэ нь overlap нь performance-ийг заавал хиймлээр өсгөсөн гэж шууд дүгнэх боломжгүйг харуулж байгаа боловч split strategy болон credit-level dependency нь цаашдын production validation-д анхаарах зүйл хэвээр байна.
+
+---
+
+# 17. Final prediction output
+
+Final prediction dataset дээр дараах багануудыг гаргасан:
 
 ```text
 credit_id
@@ -495,111 +408,163 @@ risk_rank_pct
 risk_segment
 ```
 
-Жишээ:
+Нийт:
 
-| credit_id | created_month | risk_score | risk_rank_pct | risk_segment |
-|---|---:|---:|---:|---|
-| 2069593 | 202606 | 0.5944 | 0.000118 | Top 10% - High Risk |
-| 2603520 | 202606 | 0.5329 | 0.000236 | Top 10% - High Risk |
-| 2063776 | 202606 | 0.5323 | 0.000354 | Top 10% - High Risk |
+**8,463 prediction rows**
 
----
+CSV файл:
 
-## 19. Хязгаарлалтууд
+```text
+toki_final_risk_predictions.csv
+```
 
-Энэхүү ажлын гол limitations:
-
-1. Model-ийн predictive performance дунд түвшинд байгаа бөгөөд төгс classifier биш.
-2. Өгөгдөлд нэг `credit_id` олон хугацаанд давтагдах боломжтой.
-3. Train, Validation, Test хооронд credit-level overlap байгаа.
-4. Missingness pattern нь хугацааны явцад өөрчлөгдөж болно.
-5. Зарим feature-ийг prediction үеийн availability баталгаатай биш байсан тул хассан.
-6. False positive болон false negative-ийн business cost тодорхой өгөгдөөгүй.
-7. Иймээс model-ийг binary decision system-ээс илүү risk-ranking model хэлбэрээр ашиглах нь тохиромжтой.
-8. Production орчинд model drift болон monthly cohort performance-ийг тогтмол хянах шаардлагатай.
+Output нь risk score-оор эрэмбэлэгдсэн бөгөөд хэрэглэгч бүрийн risk segment-ийг агуулна.
 
 ---
 
-## 20. Цаашид сайжруулах боломж
+# 18. Business interpretation
 
-Дараагийн шатанд:
+Энэ model-ийн гол үнэ цэнэ нь зөвхөн `default / non-default` classification хийхэд бус, **эрсдэлийн өндөр хэрэглэгчдийг эрэмбэлэн priority тогтоох** боломжид оршино.
 
-- илүү олон хугацааны temporal validation хийх
-- credit-disjoint robustness evaluation хийх
-- probability calibration хийх
-- business cost дээр суурилсан threshold optimization хийх
-- collection capacity-д суурилсан intervention policy боловсруулах
-- сар бүр model performance мониторинг хийх
-- feature drift болон missingness drift хянах
-- шаардлагатай үед model retraining хийх
-- prediction-time availability баталгаатай нэмэлт behavioral feature оруулах
+Жишээ operational use case:
 
-боломжтой.
+1. Top 10% хэрэглэгчийг хамгийн өндөр priority intervention-д оруулах.
+2. Дараагийн 10%-ийг high-medium priority болгон авч үзэх.
+3. Top 30%-ийг targeted monitoring-д ашиглах.
+4. Bottom 70%-ийг бага priority байдлаар боловсруулах.
+
+Ингэснээр бизнесийн нөөцийг бүх хэрэглэгчид ижил хэмжээгээр зарцуулахын оронд өндөр эрсдэлтэй сегментэд төвлөрүүлэх боломжтой.
 
 ---
 
-## 21. Төслийн бүтэц
+# 19. Limitations
+
+Энэхүү шийдэлд дараах limitations байна:
+
+### 1. Predictive performance moderate
+
+Final test:
+
+- ROC-AUC = **0.618**
+- PR-AUC = **0.388**
+
+Иймээс model нь perfect classifier биш бөгөөд production decision-д дангаар нь ашиглах ёсгүй.
+
+### 2. Credit-level overlap
+
+Train, validation болон test-ийн хооронд credit-level overlap байгаа.
+
+Иймээс test result-ийг бүрэн independent customer-level generalization гэж тайлбарлах боломжгүй.
+
+### 3. Probability calibration
+
+Risk score нь actual probability-тэй бүрэн calibrated биш.
+
+Иймээс:
+
+> `risk_score = 0.45`
+
+гэдгийг яг `45% default probability` гэж тайлбарлахгүй.
+
+### 4. Threshold sensitivity
+
+Threshold өөрчлөгдөхөд precision болон recall ихээхэн өөрчлөгдөж байна.
+
+Иймээс production threshold-ийг бизнесийн intervention cost болон risk appetite-тэй уялдуулан сонгох шаардлагатай.
+
+### 5. Temporal validation
+
+Илүү найдвартай production validation хийхийн тулд future-period holdout буюу time-based validation хийх нь зүйтэй.
+
+---
+
+# 20. Recommended next steps
+
+Production deployment-ээс өмнө дараах ажлуудыг хийхийг зөвлөж байна:
+
+1. **Time-based validation**
+   - Ирээдүйн cohort-ийг тусад нь holdout хийх.
+
+2. **Credit/customer-level split**
+   - Нэг credit/customer-ийн мэдээлэл train болон test-д давхар орохгүй байх split strategy хэрэгжүүлэх.
+
+3. **Probability calibration**
+   - Isotonic Regression эсвэл Platt Scaling ашиглан probability calibration шалгах.
+
+4. **Business cost-based threshold**
+   - False positive болон false negative-ийн бизнесийн өртгийг тооцож threshold сонгох.
+
+5. **Model monitoring**
+   - Data drift
+   - Feature drift
+   - Prediction distribution
+   - Default rate
+   - Model performance
+
+   зэргийг production дээр тогтмол хянах.
+
+6. **Explainability**
+   - SHAP зэрэг арга ашиглан individual prediction-ийн гол нөлөөлөгч feature-үүдийг тайлбарлах.
+
+7. **Champion / challenger setup**
+   - XGBoost-ийг champion model болгон авч, LightGBM зэрэг model-ийг challenger байдлаар production validation-д харьцуулах.
+
+---
+
+# 21. Conclusion
+
+Энэхүү ажлаар хэрэглэгчийн behavioral болон financial мэдээлэлд үндэслэн 91+ хоногийн хугацаа хэтрүүлэлтийн эрсдэлийг үнэлэх end-to-end machine learning pipeline боловсруулсан.
+
+33 feature ашигласан хэд хэдэн model-ийг харьцуулсны үр дүнд **XGBoost** хамгийн сайн test performance үзүүлсэн:
+
+- **ROC-AUC: 0.6175**
+- **PR-AUC: 0.3875**
+
+Model нь ялангуяа ranking-based approach дээр практик ач холбогдолтой үр дүн үзүүлсэн. Test set-ийн хамгийн өндөр эрсдэлтэй 10% хэрэглэгчийн target rate **46.01%** байсан нь нийт baseline **28.59%**-оос **1.61x өндөр** байв.
+
+Final prediction set дээр 8,463 хэрэглэгчид risk score тооцож, Top 10%, 10–20%, 20–30%, Bottom 70% гэсэн operational risk segment-үүдэд хуваасан.
+
+Гэхдээ model-ийн performance moderate бөгөөд credit-level overlap, probability calibration болон temporal generalization зэрэг асуудлууд production deployment-ээс өмнө нэмэлтээр шалгагдах шаардлагатай.
+
+Иймээс энэхүү шийдлийг **final automated credit decision maker** гэхээс илүү **risk prioritization болон targeted intervention-д ашиглах predictive ranking system-ийн prototype** гэж үзэх нь зохистой.
+
+---
+
+# 22. Repository structure
 
 ```text
 .
-├── Toki_Data_Scientist_Task.ipynb
+├── README.md
+├── Toki Data Scientist task.ipynb
 ├── toki_final_risk_predictions.csv
-└── README.md
+└── data/
+    └── Toki Data Scientist task.xlsx
 ```
 
-### Notebook
-
-`Toki_Data_Scientist_Task.ipynb` нь:
-
-- Data loading
-- Data quality audit
-- Target definition
-- Temporal split
-- Leakage analysis
-- Feature engineering
-- Missing value analysis
-- Baseline models
-- Model comparison
-- XGBoost development
-- Model evaluation
-- Threshold analysis
-- Lift analysis
-- Robustness analysis
-- Final prediction
-- Risk segmentation
-
-бүх workflow-ийг агуулна.
+> Dataset-ийн privacy болон repository-ийн шаардлагаас шалтгаалан эх өгөгдлийг repository-д оруулах эсэхийг тусад нь шийдвэрлэнэ.
 
 ---
 
-## 22. Дүгнэлт
+# 23. Tools & Technologies
 
-Энэхүү төсөлд DPD31 болсон хэрэглэгч DPD91+ болох эрсдэлийг таамаглах temporal machine learning framework боловсруулсан.
+- Python
+- Pandas
+- NumPy
+- Scikit-learn
+- XGBoost
+- LightGBM
+- Matplotlib
+- Seaborn
+- Jupyter Notebook
 
-Үнэлэгдсэн model-уудаас XGBoost хамгийн сайн test ranking performance үзүүлсэн.
+---
 
-### Final Test Performance
+# 24. Final takeaway
 
-```text
-ROC-AUC = 0.6175
-PR-AUC  = 0.3875
-```
+Энэхүү даалгаврын үндсэн санаа нь:
 
-Business талаас хамгийн чухал үр дүн:
+**Raw data → Data quality analysis → Feature engineering → Model comparison → Validation → Test evaluation → Threshold & ranking analysis → Risk segmentation → Final customer-level prediction**
 
-```text
-Overall positive rate = 28.6%
+гэсэн бүрэн pipeline байгуулах явдал байсан.
 
-Top 10% risk group
-Positive rate = 46.0%
-
-Lift = 1.61x
-```
-
-Өөрөөр хэлбэл model нь хамгийн өндөр эрсдэлтэй Top 10% хэрэглэгчдийн дотор positive case-уудыг нийт population-тэй харьцуулахад **1.61 дахин өндөр концентрациар** илрүүлж чадсан.
-
-Иймээс энэхүү model-ийн гол хэрэглээ нь:
-
-> **DPD31 болсон хэрэглэгчдийг эрсдэлийн оноогоор эрэмбэлж, collection болон intervention-ийн нөөцийг өндөр эрсдэлтэй хэрэглэгчдэд түрүүлж чиглүүлэх.**
-
-Final prediction pipeline нь **8,463 unlabeled хэрэглэгчид** зориулсан risk score болон risk segment үүсгэж, бизнесийн дараагийн шатны risk-based prioritization хийх боломжийг бүрдүүлсэн.
+Final model нь төгс classification хийхээс илүү **эрсдэлийн өндөр хэрэглэгчдийг зөв дараалалд оруулж, бизнесийн intervention-ийн priority тогтоох** тал дээр ашиглах боломжтойг үр дүн харуулж байна.
